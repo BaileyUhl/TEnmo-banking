@@ -61,14 +61,29 @@ public class JdbcUserDao implements UserDao {
         String sql = "INSERT INTO tenmo_user (username, password_hash) VALUES (?, ?) RETURNING user_id";
         String password_hash = new BCryptPasswordEncoder().encode(password);
         Integer newUserId;
-        try {
+
+        try
+        {
             newUserId = jdbcTemplate.queryForObject(sql, Integer.class, username, password_hash);
-        } catch (DataAccessException e) {
+        }
+        catch (DataAccessException e)
+        {
             return false;
         }
 
-        // TODO: Create the account record with initial balance
+        // Create the account with initial balance
+        String accountSql = "INSERT INTO account (user_id, balance) VALUES (?, ?)  RETURNING account_id";
+        double initialBalance = 1000.0; // Set the initial balance
+        Integer newAccountId;
 
+        try
+        {
+            newAccountId = jdbcTemplate.queryForObject(accountSql, Integer.class, newUserId, initialBalance);
+        }
+        catch (DataAccessException e)
+        {
+            return false;
+        }
         return true;
     }
 
