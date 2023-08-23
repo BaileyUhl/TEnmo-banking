@@ -13,6 +13,7 @@ public class Account
         this.userId = userId;
         this.accountId = accountId;
     }
+    public Account(){}
 
     //Getters
     public double getBalance()
