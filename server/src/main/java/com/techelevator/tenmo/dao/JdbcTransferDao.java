@@ -1,29 +1,69 @@
 package com.techelevator.tenmo.dao;
 
+import com.techelevator.tenmo.model.Account;
 import com.techelevator.tenmo.model.Transfer;
 import com.techelevator.tenmo.model.TransferDTO;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
 @Component
 public class JdbcTransferDao implements TransferDao{
     private JdbcTemplate jdbcTemplate;
+    private JdbcAccountDao jdbcAccountDao;
 
     public JdbcTransferDao(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
+    private Account account;
 
     @Override
     public Transfer addNewTransfer(Transfer transfer) {
         String sql = "INSERT INTO transfer (transfer_amount, sender_name, receiver_name) " +
-                "VALUES (?, ?, ?, ?) RETURNING transfer_id;";
+                "VALUES (?, ?, ?) RETURNING transfer_id;";
         Integer newTransferId = jdbcTemplate.queryForObject(sql, Integer.class, transfer.getTransferAmount(),
                                         transfer.getSenderName(), transfer.getReceiverName());
         transfer.setTransferId(newTransferId);
-        return transfer;
+
+                double fromAccountBalance = jdbcAccountDao.getBalanceByUserId(transfer.getTransferId()).getBalance();
+        if (transfer.getTransferAmount() > fromAccountBalance || transfer.getTransferAmount() <= 0 ) {
+            throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE,
+                    "Insufficient funds/Transfer amount cannot be below zero");
+        }else if(transfer.getSenderName().equals(transfer.getReceiverName())){
+            throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Cannot send money to yourself");
+        }else {
+            // run an SQL that increases the balance of the recipient
+        /*
+        UPDATE account SET balance = balance + ? WHERE ....
+         */
+            String sql2 = "UPDATE account \n" +
+                    "SET balance = balance + ?  \n" +
+                    "WHERE user_id IN (SELECT account.user_id FROM account \n" +
+                    "\t\t\t\t  JOIN tenmo_user ON tenmo_user.user_id = account.user_id \n" +
+                    "\t\t\t\t  JOIN transfer ON transfer.receiver_name = tenmo_user.username \n" +
+                    "\t\t\t\t  WHERE receiver_name = ? AND transfer_amount = ?)";
+            int rowsAffected = jdbcTemplate.update(sql2, transfer.getTransferAmount(), transfer.getReceiverName(), transfer.getTransferAmount());
+//        transfer.setTransferAmount(rowsAffected);
+            // run an SQL that decreases the balance of the sender
+        /*
+        UPDATE account SET balance = balance - ? WHERE ....
+         */
+            String sql3 = "UPDATE account \n" +
+                    "SET balance = balance - ?  \n" +
+                    "WHERE user_id IN (SELECT account.user_id FROM account \n" +
+                    "\t\t\t\t  JOIN tenmo_user ON tenmo_user.user_id = account.user_id \n" +
+                    "\t\t\t\t  JOIN transfer ON transfer.sender_name = tenmo_user.username \n" +
+                    "\t\t\t\t  WHERE sender_name = ? AND transfer_amount = ?)";
+            int rowsAffected1 = jdbcTemplate.update(sql3, transfer.getTransferAmount(), transfer.getSenderName(), transfer.getTransferAmount());
+//        transfer.setTransferAmount(rowsAffected1);
+//         to run the updates use the jdbcTemplate.update(...)
+
+            return transfer;
+        }
     }
 
     @Override
@@ -65,6 +105,8 @@ public class JdbcTransferDao implements TransferDao{
        }
        return transfer;
     }
+
+
 
     private Transfer mapRowToTransfer(SqlRowSet rowSet)
     {

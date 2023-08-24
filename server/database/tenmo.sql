@@ -40,13 +40,10 @@ CREATE SEQUENCE seq_transfer_id
 
 CREATE TABLE transfer (
 transfer_id int NOT NULL DEFAULT nextval('seq_transfer_id'),
-account_id int NOT NULL,
 transfer_amount numeric(13, 2) NOT NULL,
 sender_name varchar(64) NOT NULL,
 receiver_name varchar(64) NOT NULL,
-CONSTRAINT PK_transfer PRIMARY KEY (transfer_id),
-CONSTRAINT FK_transfer_account_id FOREIGN KEY (account_id) REFERENCES account (account_id)
+CONSTRAINT PK_transfer PRIMARY KEY (transfer_id)
 );
-
 
 COMMIT;
