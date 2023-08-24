@@ -1,6 +1,7 @@
 package com.techelevator.tenmo.dao;
 
 import com.techelevator.tenmo.model.Account;
+import com.techelevator.tenmo.model.AccountDTO;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.CannotGetJdbcConnectionException;
@@ -38,15 +39,20 @@ public class JdbcAccountDao implements AccountDao
         return account;
     }
 
+
+
     @Override
-    public Account getBalanceByUsername(String username) {
-        Account account = null;
-        String sql = "SELECT balance, username FROM account " +
-                "JOIN tenmo_user ON tenmo_user.user_id = account.user_id " +
-                "WHERE username = ?;";
-        SqlRowSet result = jdbcTemplate.queryForRowSet(sql, username);
-        if (result.next()){
-            account = mapRowToAccount(result);
+    public AccountDTO getBalanceByUserId(int userId) {
+        AccountDTO account = null;
+        String sql ="SELECT balance, username " +
+                    "FROM account " +
+                    "JOIN tenmo_user ON tenmo_user.user_id = account.user_id " +
+                    "WHERE tenmo_user.user_id = ?;";
+        SqlRowSet result = jdbcTemplate.queryForRowSet(sql, userId);
+
+        if (result.next())
+        {
+            account = mapRowToAccount2(result);
         }
         return account;
     }
@@ -70,5 +76,15 @@ public class JdbcAccountDao implements AccountDao
         account.setBalance(accountResult.getDouble("balance"));
         return account;
     }
+
+
+    private AccountDTO mapRowToAccount2(SqlRowSet accountResult)
+    {
+        AccountDTO account = new AccountDTO();
+        account.setUsername(accountResult.getString("username"));
+        account.setBalance(accountResult.getDouble("balance"));
+        return account;
+    }
+
 
 }

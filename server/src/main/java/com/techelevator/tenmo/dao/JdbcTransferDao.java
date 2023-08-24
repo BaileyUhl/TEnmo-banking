@@ -1,6 +1,7 @@
 package com.techelevator.tenmo.dao;
 
 import com.techelevator.tenmo.model.Transfer;
+import com.techelevator.tenmo.model.TransferDTO;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Component;
@@ -17,10 +18,10 @@ public class JdbcTransferDao implements TransferDao{
 
     @Override
     public Transfer addNewTransfer(Transfer transfer) {
-        String sql = "INSERT INTO transfer (account_id, transfer_amount, sender_name, receiver_name) " +
+        String sql = "INSERT INTO transfer (transfer_amount, sender_name, receiver_name) " +
                 "VALUES (?, ?, ?, ?) RETURNING transfer_id;";
-        Integer newTransferId = jdbcTemplate.queryForObject(sql, Integer.class, transfer.getAccountId(),
-                transfer.getTransferAmount(), transfer.getSenderName(), transfer.getReceiverName());
+        Integer newTransferId = jdbcTemplate.queryForObject(sql, Integer.class, transfer.getTransferAmount(),
+                                        transfer.getSenderName(), transfer.getReceiverName());
         transfer.setTransferId(newTransferId);
         return transfer;
     }
@@ -52,22 +53,27 @@ public class JdbcTransferDao implements TransferDao{
     @Override
     public Transfer getTransferById(int id) {
         Transfer transfer = null;
-       String sql = "SELECT transfer_id, transfer_amount, sender_name, receiver_name " +
-               "FROM transfer WHERE transfer_id = ?;";
+       String sql ="SELECT transfer_id, transfer_amount, sender_name, receiver_name " +
+                    "FROM transfer " +
+                    "WHERE transfer_id = ?;";
+
        SqlRowSet result = jdbcTemplate.queryForRowSet(sql, id);
-       if (result.next()){
+
+       if (result.next())
+       {
            transfer = mapRowToTransfer(result);
        }
        return transfer;
     }
 
-    private Transfer mapRowToTransfer(SqlRowSet rowSet) {
+    private Transfer mapRowToTransfer(SqlRowSet rowSet)
+    {
         Transfer transfer = new Transfer();
         transfer.setTransferId(rowSet.getInt("transfer_id"));
-        transfer.setAccountId(rowSet.getInt("account_id"));
         transfer.setTransferAmount(rowSet.getDouble("transfer_amount"));
         transfer.setSenderName(rowSet.getString("sender_name"));
         transfer.setReceiverName(rowSet.getString("receiver_name"));
         return transfer;
     }
+
 }
