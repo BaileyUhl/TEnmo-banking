@@ -1,8 +1,8 @@
 BEGIN TRANSACTION;
 
-DROP TABLE IF EXISTS tenmo_user, account;
+DROP TABLE IF EXISTS tenmo_user, account, transfer;
 
-DROP SEQUENCE IF EXISTS seq_user_id, seq_account_id;
+DROP SEQUENCE IF EXISTS seq_user_id, seq_account_id, seq_transfer_id;
 
 -- Sequence to start user_id values at 1001 instead of 1
 CREATE SEQUENCE seq_user_id
@@ -33,12 +33,27 @@ CREATE TABLE account (
 	CONSTRAINT FK_account_tenmo_user FOREIGN KEY (user_id) REFERENCES tenmo_user (user_id)
 );
 
---INSERT INTO account (balance, user_id, account_id)
---VALUES (100, 1, 1), (1000, 2, 2), (200, 3, 3);
+CREATE SEQUENCE seq_transfer_id
+  INCREMENT BY 1
+  START WITH 3001
+  NO MAXVALUE;
+
+--CREATE TABLE transfer (
+--transfer_id int NOT NULL DEFAULT nextval('seq_transfer_id'),
+--transfer_amount numeric(13, 2) NOT NULL,
+--sender_name varchar(64) NOT NULL,
+--receiver_name varchar(64) NOT NULL,
+--CONSTRAINT PK_transfer PRIMARY KEY (transfer_id)
+--);
 
 INSERT INTO tenmo_user (username, password_hash)
 VALUES ('bob', '$2a$10$G/MIQ7pUYupiVi72DxqHquxl73zfd7ZLNBoB2G6zUb.W16imI2.W2'),
        ('user', '$2a$10$Ud8gSvRS4G1MijNgxXWzcexeXlVs4kWDOkjE7JFIkNLKEuE57JAEy');
+
+INSERT INTO account (balance, user_id, account_id)
+VALUES (100, 1001, 2001),
+(1000, 1002, 2002);
+
 
 
 COMMIT;
