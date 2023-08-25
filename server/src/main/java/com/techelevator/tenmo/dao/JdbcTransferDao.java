@@ -23,14 +23,23 @@ public class JdbcTransferDao implements TransferDao{
 
     @Override
     public Transfer addNewTransfer(Transfer transfer) {
-        String sql = "INSERT INTO transfer (transfer_amount, sender_name, receiver_name) " +
+        String sql1 = "INSERT INTO transfer (transfer_amount, sender_name, receiver_name) " +
                 "VALUES (?, ?, ?) RETURNING transfer_id;";
-        Integer newTransferId = jdbcTemplate.queryForObject(sql, Integer.class, transfer.getTransferAmount(),
-                                        transfer.getSenderName(), transfer.getReceiverName());
+        Integer newTransferId = jdbcTemplate.queryForObject(sql1, Integer.class, transfer.getTransferAmount(),
+                transfer.getSenderName(), transfer.getReceiverName());
         transfer.setTransferId(newTransferId);
 
-                double fromAccountBalance = jdbcAccountDao.getBalanceByUserId(transfer.getTransferId()).getBalance();
-        if (transfer.getTransferAmount() > fromAccountBalance || transfer.getTransferAmount() <= 0 ) {
+        String sql = "SELECT balance FROM account \n" +
+                "JOIN tenmo_user ON tenmo_user.user_id = account.user_id\n" +
+                "WHERE username = ?;";
+        SqlRowSet result = jdbcTemplate.queryForRowSet(sql, transfer.getSenderName());
+        double trialBalance = 0;
+        if (result.next()){
+            trialBalance = result.getDouble("balance");
+        }
+        trialBalance -= transfer.getTransferAmount();
+
+        if (trialBalance < 0 || transfer.getTransferAmount() <= 0 ) {
             throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE,
                     "Insufficient funds/Transfer amount cannot be below zero");
         }else if(transfer.getSenderName().equals(transfer.getReceiverName())){
@@ -47,7 +56,7 @@ public class JdbcTransferDao implements TransferDao{
                     "\t\t\t\t  JOIN transfer ON transfer.receiver_name = tenmo_user.username \n" +
                     "\t\t\t\t  WHERE receiver_name = ? AND transfer_amount = ?)";
             int rowsAffected = jdbcTemplate.update(sql2, transfer.getTransferAmount(), transfer.getReceiverName(), transfer.getTransferAmount());
-//        transfer.setTransferAmount(rowsAffected);
+
             // run an SQL that decreases the balance of the sender
         /*
         UPDATE account SET balance = balance - ? WHERE ....
@@ -57,12 +66,12 @@ public class JdbcTransferDao implements TransferDao{
                     "WHERE user_id IN (SELECT account.user_id FROM account \n" +
                     "\t\t\t\t  JOIN tenmo_user ON tenmo_user.user_id = account.user_id \n" +
                     "\t\t\t\t  JOIN transfer ON transfer.sender_name = tenmo_user.username \n" +
-                    "\t\t\t\t  WHERE sender_name = ? AND transfer_amount = ?)";
+                   "\t\t\t\t  WHERE sender_name = ? AND transfer_amount = ?)";
             int rowsAffected1 = jdbcTemplate.update(sql3, transfer.getTransferAmount(), transfer.getSenderName(), transfer.getTransferAmount());
-//        transfer.setTransferAmount(rowsAffected1);
-//         to run the updates use the jdbcTemplate.update(...)
 
-            return transfer;
+        // to run the updates use the jdbcTemplate.update(...)
+
+           return transfer;
         }
     }
 

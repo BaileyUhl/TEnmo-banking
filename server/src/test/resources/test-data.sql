@@ -33,7 +33,8 @@ CREATE TABLE account (
 	CONSTRAINT FK_account_tenmo_user FOREIGN KEY (user_id) REFERENCES tenmo_user (user_id)
 );
 
-
+--INSERT INTO account (balance, user_id, account_id)
+--VALUES (100, 1, 1), (1000, 2, 2), (200, 3, 3);
 
 INSERT INTO tenmo_user (username, password_hash)
 VALUES ('bob', '$2a$10$G/MIQ7pUYupiVi72DxqHquxl73zfd7ZLNBoB2G6zUb.W16imI2.W2'),

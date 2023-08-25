@@ -5,7 +5,12 @@ public class AccountDTO
     private String username;
     private double balance;
 
+    public AccountDTO(String username, double balance) {
+        this.username = username;
+        this.balance = balance;
+    }
 
+    public AccountDTO(){}
 
     public double getBalance()
     {
